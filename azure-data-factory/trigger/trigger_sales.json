@@ -1,0 +1,29 @@
+{
+    "name": "trigger_sales",
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "pl_sales_hnk_main",
+                    "type": "PipelineReference"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Month",
+                "interval": 15,
+                "startTime": "2026-08-07T10:48:00",
+                "timeZone": "SE Asia Standard Time",
+                "schedule": {
+                    "monthDays": [
+                        1
+                    ]
+                }
+            }
+        }
+    }
+}

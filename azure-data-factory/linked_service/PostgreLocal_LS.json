@@ -1,0 +1,21 @@
+{
+    "name": "PostgreLocal_LS",
+    "type": "Microsoft.DataFactory/factories/linkedservices",
+    "properties": {
+        "annotations": [],
+        "type": "PostgreSqlV2",
+        "typeProperties": {
+            "server": "localhost",
+            "port": 5432,
+            "database": "<<db_name>>",
+            "username": "<<user_name>>",
+            "sslMode": 2,
+            "authenticationType": "Basic",
+            "encryptedCredential": "<<encryptedCredential>>"
+        },
+        "connectVia": {
+            "referenceName": "Local-Postgres-IR",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

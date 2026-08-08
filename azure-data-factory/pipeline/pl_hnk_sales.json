@@ -1,0 +1,251 @@
+{
+    "name": "pl_sales_hnk",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get_Table_Name",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "PostgreSqlV2Source",
+                        "query": "SELECT table_name \nFROM information_schema.tables \nWHERE table_schema = 'sellout' \n  AND table_type = 'BASE TABLE';",
+                        "queryTimeout": "02:00:00"
+                    },
+                    "dataset": {
+                        "referenceName": "PostgreSqlTable1",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "schema": "''",
+                            "table": "''"
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get_Table_Name",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get_Table_Name').output.value",
+                        "type": "Expression"
+                    },
+                    "batchCount": 4,
+                    "activities": [
+                        {
+                            "name": "Get_Config_Info",
+                            "type": "DatabricksNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebookPath": "/Users/21120590@student.hcmus.edu.vn/get_table_config",
+                                "baseParameters": {
+                                    "table_name": {
+                                        "value": "@item().table_name",
+                                        "type": "Expression"
+                                    },
+                                    "source_schema": "sellout"
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "AzureDatabricks1",
+                                "type": "LinkedServiceReference"
+                            }
+                        },
+                        {
+                            "name": "Copy_data",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get_Config_Info",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "PostgreSqlV2Source",
+                                    "query": {
+                                        "value": "@replace(\n    concat('SELECT * FROM sellout.', activity('Get_Config_Info').output.runOutput.table_name, ' ', activity('Get_Config_Info').output.runOutput.watermark),\n    '<<last_ext_date>>',\n    concat('''', addDays(activity('Get_Config_Info').output.runOutput.last_extraction_date, -1, 'yyyy-MM-dd HH:mm:ss'), '''')\n)",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00"
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "PostgreSqlTable1",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "schema": "sellout",
+                                        "table": {
+                                            "value": "@item().table_name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "Parquet1",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "lakehouse_url": {
+                                            "value": "@pipeline().globalParameters.lakehouse_url",
+                                            "type": "Expression"
+                                        },
+                                        "container": {
+                                            "value": "@activity('Get_Config_Info').output.runOutput.target_container",
+                                            "type": "Expression"
+                                        },
+                                        "path": {
+                                            "value": "@activity('Get_Config_Info').output.runOutput.target_path",
+                                            "type": "Expression"
+                                        },
+                                        "file": {
+                                            "value": "@concat(activity('Get_Config_Info').output.runOutput.target_entity_name, '.parquet')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Upsert_data",
+                            "type": "DatabricksNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "Copy_data",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebookPath": "/Users/21120590@student.hcmus.edu.vn/upsert_data",
+                                "baseParameters": {
+                                    "key": {
+                                        "value": "@activity('Get_Config_Info').output.runOutput.key",
+                                        "type": "Expression"
+                                    },
+                                    "container": {
+                                        "value": "@activity('Get_Config_Info').output.runOutput.target_container",
+                                        "type": "Expression"
+                                    },
+                                    "path": {
+                                        "value": "@activity('Get_Config_Info').output.runOutput.target_path",
+                                        "type": "Expression"
+                                    },
+                                    "entity": {
+                                        "value": "@activity('Get_Config_Info').output.runOutput.target_entity_name",
+                                        "type": "Expression"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "AzureDatabricks1",
+                                "type": "LinkedServiceReference"
+                            }
+                        },
+                        {
+                            "name": "Update_LET",
+                            "type": "DatabricksNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "Upsert_data",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebookPath": "/Users/21120590@student.hcmus.edu.vn/update_let",
+                                "baseParameters": {
+                                    "entity": {
+                                        "value": "@activity('Get_Config_Info').output.runOutput.table_name",
+                                        "type": "Expression"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "AzureDatabricks1",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2026-08-06T18:06:02Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

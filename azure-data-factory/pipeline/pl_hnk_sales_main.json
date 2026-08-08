@@ -1,0 +1,110 @@
+{
+    "name": "pl_sales_hnk_main",
+    "properties": {
+        "activities": [
+            {
+                "name": "Run_pl_sales_hnk",
+                "type": "ExecutePipeline",
+                "dependsOn": [],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "pl_sales_hnk",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "Notify_Success",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Run_pl_sales_hnk",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "pl_teams_notification",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "webhookUrl": {
+                            "value": "@pipeline().globalParameters.webhook_url",
+                            "type": "Expression"
+                        },
+                        "pipelineName": "pl_sales_hnk",
+                        "runStatus": "Success",
+                        "startTime": {
+                            "value": "@pipeline().TriggerTime",
+                            "type": "Expression"
+                        },
+                        "endTime": {
+                            "value": "@utcnow()",
+                            "type": "Expression"
+                        },
+                        "runUrl": {
+                            "value": "@concat('https://adf.azure.com/en/monitoring/pipelineruns/', pipeline().RunId, '?factoryName=', pipeline().DataFactory, '&factory=%2Fsubscriptions%2F', pipeline().globalParameters.subscription_id, '%2FresourceGroups%2F', pipeline().globalParameters.resource_group, '%2Fproviders%2FMicrosoft.DataFactory%2Ffactories%2F', pipeline().DataFactory)",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Notify_Failure",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Run_pl_sales_hnk",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "pl_teams_notification",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "webhookUrl": {
+                            "value": "@pipeline().globalParameters.webhook_url",
+                            "type": "Expression"
+                        },
+                        "pipelineName": "pl_sales_hnk",
+                        "runStatus": "Failed",
+                        "startTime": {
+                            "value": "@pipeline().TriggerTime",
+                            "type": "Expression"
+                        },
+                        "endTime": {
+                            "value": "@utcnow()",
+                            "type": "Expression"
+                        },
+                        "runUrl": {
+                            "value": "@concat('https://adf.azure.com/en/monitoring/pipelineruns/', pipeline().RunId, '?factoryName=', pipeline().DataFactory, '&factory=%2Fsubscriptions%2F', pipeline().globalParameters.subscription_id, '%2FresourceGroups%2F', pipeline().globalParameters.resource_group, '%2Fproviders%2FMicrosoft.DataFactory%2Ffactories%2F', pipeline().DataFactory)",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            }
+        ],
+        "annotations": []
+    }
+}
