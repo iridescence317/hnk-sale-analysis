@@ -5,10 +5,6 @@ This project is an automated, metadata-driven Data Engineering pipeline that per
 ## 📖 Context
 An FMCG enterprise (simulated with Heineken portfolio data) stores critical daily sales data—including orders, invoices, and customer channels—in an on-premises PostgreSQL database. This creates a data silo that prevents centralized, cloud-based analytics
 
-## 🚨 Pain Points
-- Inefficiency: Performing full daily data extractions is slow, expensive, and consumes excessive compute resources.
-- Maintenance Overhead: Hardcoding separate ETL pipelines for every single source table creates massive technical debt and makes scaling difficult.
-
 ## 🎯 Objectives
 Build a fully automated, metadata-driven incremental pipeline that dynamically extracts only new or updated records, securely upserts them into an Azure Delta Lake (Medallion architecture), and provides real-time monitoring alerts via Microsoft Teams.
 
